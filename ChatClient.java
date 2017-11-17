@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.util.Scanner;
 
@@ -22,18 +23,20 @@ final class ChatClient {
     /*
      * This starts the Chat Client
      */
+
     private boolean start() {
         // Create a socket
         try {
             socket = new Socket(server, port);
-        } catch (IOException e) {
+        } catch (IOException  e ) {
             e.printStackTrace();
         }
 
         // Create your input and output streams
         try {
-            sInput = new ObjectInputStream(socket.getInputStream());
-            sOutput = new ObjectOutputStream(socket.getOutputStream());
+                sInput = new ObjectInputStream(socket.getInputStream());
+                sOutput = new ObjectOutputStream(socket.getOutputStream());
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -50,7 +53,7 @@ final class ChatClient {
             e.printStackTrace();
         }
 
-        return true;
+        return false;
     }
 
 
@@ -87,22 +90,26 @@ final class ChatClient {
             if(args.length>2)
                 serverAddress = args[2];
         }
+
         // Create your client and start it
         ChatClient client = new ChatClient(serverAddress, portNumber, username);
+       //ChatClient client = new ChatClient("localhost", 1500, "Tom");
         client.start();
         boolean x = true;
+        Scanner sc = new Scanner(System.in);
         do {
-            Scanner sc = new Scanner(System.in);
             String message = sc.nextLine();
-            ChatMessage msg = null;
             int type = 0;
             if(message.toLowerCase().equals("/logout")) {
-                x = false;
-                client.closeAll();
                 type = 1;
             }
-            msg = new ChatMessage(type, message);
-            client.sendMessage(msg);
+                ChatMessage msg = new ChatMessage(type, message);
+                client.sendMessage(msg);
+                if (type == 1) {
+                    x = false;
+                    client.close();
+                }
+
         }while(x);
     }
 
@@ -115,16 +122,16 @@ final class ChatClient {
     private final class ListenFromServer implements Runnable {
         public void run() {
             try {
-                while(true) {
-                    String msg = (String) sInput.readObject();
-                    System.out.print(msg);
+                while(!socket.isClosed()) {
+                        String msg = (String) sInput.readObject();
+                        System.out.print(msg);
                 }
             } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
+                close();
             }
         }
     }
-    private boolean closeAll(){
+    private boolean close(){
         try {
             sInput.close();
             sOutput.close();
