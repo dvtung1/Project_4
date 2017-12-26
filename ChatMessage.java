@@ -10,12 +10,6 @@ final class ChatMessage implements Serializable {
         this.message = message;
         this.username = username;
     }
-    public ChatMessage(int type, String message, String username){
-        this.type = type;
-        this.message = message;
-        this.username = username;
-    }
-
     public int getType(){
         return type;
     }
