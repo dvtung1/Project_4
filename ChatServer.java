@@ -13,8 +13,8 @@ final class ChatServer {
     private static int uniqueId = 0;
     private final List<ClientThread> clients = new ArrayList<>();
     private final int port;
-
-
+    private static String fileAddress;
+    private static int randomNumber =0;
     private ChatServer(int port) {
         this.port = port;
     }
@@ -38,29 +38,34 @@ final class ChatServer {
         }
     }
     private synchronized void broadcast(String message){
-
-        Date date = new Date();
-        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
-        String datetoStr = formatter.format(date);
-        message = datetoStr+" "+message;
-
+              message = getDate()+" "+message;
         for(int i = 0; i<clients.size(); i++){
             ClientThread cli = clients.get(i);
-            cli.writeMessage(message + "\n");
+            cli.writeMessage(message);
         }
         System.out.println(message);
     }
     private synchronized void directMessage(String message, String username){
-        Date date = new Date();
-        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
-        String datetoStr = formatter.format(date);
-        message = datetoStr+" "+message;
-        for(int i =0; i < clients.size(); i++) {
-            if(clients.get(i).username.equals(username)){
-                clients.get(i).writeMessage(message + "\n");
+        message = getDate()+" "+message;
+        boolean found = false;
+        for(int i = 0; i<clients.size(); i++){
+            ClientThread cli = clients.get(i);
+            if(cli.username.equals(username)) {
+                found = true;
+                cli.writeMessage(message);
             }
         }
+        if(found)
+            System.out.println(message);
+        else
+            System.out.println("Person not found.");
     }
+    private String getDate(){
+        Date date = new Date();
+        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
+        return formatter.format(date);
+    }
+
     private synchronized void remove(int id){
         clients.remove(id);
     }
@@ -73,7 +78,7 @@ final class ChatServer {
         int portNumber = 1500;
         if(args.length>0) {
             portNumber = Integer.parseInt(args[0]);
-            if (args.length > 1)
+            if(args.length > 1)
                 fileAddress = args[1];
         }
         ChatServer server = new ChatServer(portNumber);
@@ -100,6 +105,12 @@ final class ChatServer {
                 sOutput = new ObjectOutputStream(socket.getOutputStream());
                 sInput = new ObjectInputStream(socket.getInputStream());
                 username = (String) sInput.readObject();
+                for(int i =0; i < clients.size(); i++) {
+                    if (username.equals(clients.get(i).username)){
+                        username = "randomUsername" + randomNumber;
+                        randomNumber++;
+                    }
+                }
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -115,15 +126,17 @@ final class ChatServer {
         @Override
         public void run() {
             // Read the username sent to you by client
-            broadcast(username + " has logged in.");
+           broadcast(username+" just connected.");
             boolean x = true;
             while(x) {
                 try {
+                    ChatFilter chatFilter = new ChatFilter(fileAddress);
                     cm = (ChatMessage) sInput.readObject();
                     if (cm.getType() == 1) {
                         x = false;
                         if(clients.size()>=id+1) {
-                            broadcast(username + " has logged out.");
+                            broadcast(clients.get(id).username+" disconnected with a LOGOUT " +
+                                    "message.");
                             remove(id);
                         }
                     }else if (cm.getMessage().toLowerCase().equals("/list")){
@@ -133,14 +146,30 @@ final class ChatServer {
                                 writeMessage(clients.get(i).username + " ");
                             }
                         }
-                        writeMessage( "\n");
-                    }else{
-                        //ChatFilter chatFilter = new ChatFilter("badwords.txt");
-                        ChatFilter chatFilter = new ChatFilter(fileAddress);
-                        broadcast(username + ": " + chatFilter.filter(cm.getMessage()));
+                    }
+                    else if(cm.getType() == 0){
+                        if(fileAddress!=null)
+                            broadcast(username+": "+chatFilter.filter(cm.getMessage()));
+                        else
+                            broadcast(username+": "+cm.getMessage());
+                    }
+                    else if(cm.getType() == 2){
+                        if(fileAddress!=null) {
+                            directMessage(username + "->" + cm.getRecipient() + ": " + chatFilter.filter(cm.getMessage()), cm.getRecipient());
+                            writeMessage(username + "->" + cm.getRecipient() + ": " + chatFilter.filter(cm.getMessage()));
+                        }
+                        else{
+                            directMessage(username + "->" + cm.getRecipient() + ": " + cm.getMessage(), cm
+                                    .getRecipient());
+                            writeMessage(username + "->" + cm.getRecipient() + ": " + cm.getMessage());
+                        }
                     }
                 } catch (IOException | ClassNotFoundException e) {
-                    e.printStackTrace();
+                    if(clients.size()>=id+1) {
+                        broadcast(username+" has disconnected.");
+                        remove(id);
+                    }
+                    x = false;
                 }
             }
         }

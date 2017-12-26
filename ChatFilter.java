@@ -1,4 +1,3 @@
-//package chatapplication;
 import java.io.*;
 public class ChatFilter {
     private String badWordFileName;
@@ -26,19 +25,19 @@ public class ChatFilter {
             bfr2.close();
             for(int k =0; k < array.length; k++){
                 int j =0;
-            for(int i = array[k].length(); i <= msg.length(); i++) {
-                String badWord = msg.substring(j, i).toLowerCase();
-                if(badWord.equals(array[k])){
-                    String wordBefore = msg.substring(0, j);
-                    String wordAfter = msg.substring(i, msg.length());
-                    String newWord = "*";
-                    for(int m =0; m < badWord.length()-1; m++) {
-                        newWord += "*";
+                for(int i = array[k].length(); i <= msg.length(); i++) {
+                    String badWord = msg.substring(j, i).toLowerCase();
+                    if(badWord.equals(array[k])){
+                        String wordBefore = msg.substring(0, j);
+                        String wordAfter = msg.substring(i, msg.length());
+                        String newWord = "*";
+                        for(int m =0; m < badWord.length()-1; m++) {
+                            newWord += "*";
+                        }
+                        msg = wordBefore + newWord +  wordAfter;
                     }
-                     msg = wordBefore + newWord +  wordAfter;
+                    j++;
                 }
-                j++;
-            }
             }
 
 
