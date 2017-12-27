@@ -2,7 +2,7 @@ import java.io.Serializable;
 
 final class ChatMessage implements Serializable {
     private static final long serialVersionUID = 6898543889087L;
-    private int type; //0 = general; 1 = logout; 2 = DM
+    private int type; //0 = general; 1 = logout; 2 = DM; 3 = DM failure
     private String message;
     private String username;
     public ChatMessage(int type, String message, String username){
