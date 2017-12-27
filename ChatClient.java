@@ -23,14 +23,12 @@ final class ChatClient {
     /*
      * This starts the Chat Client
      */
-
     private boolean start() {
         // Create a socket
         try {
             socket = new Socket(server, port);
         } catch(ConnectException e){
             System.out.println("Server not found.");
-            return false;
         }catch (IOException e) {
             e.printStackTrace();
         }
@@ -56,7 +54,7 @@ final class ChatClient {
             e.printStackTrace();
         }
 
-        return false;
+        return true;
     }
 
 
@@ -85,13 +83,16 @@ final class ChatClient {
      */
     public static void main(String[] args) {
         // Get proper arguments and override defaults
-        String username = args[0];
+        String username = "Anonymous";
         int portNumber = 1500;
         String serverAddress = "localHost";
-        if(args.length>1) {
-            portNumber = Integer.parseInt(args[1]);
-            if(args.length>2)
-                serverAddress = args[2];
+        if(args.length>0){
+            username = args[0];
+            if(args.length>1) 
+                portNumber = Integer.parseInt(args[1]);
+                if(args.length>2)
+                    serverAddress = args[2];
+
         }
 
         // Create your client and start it
@@ -103,24 +104,27 @@ final class ChatClient {
             String message = sc.nextLine();
             int type = 0;
             String user = "";
+            //set message with "/logout" as a type 1 ChatMessage
             if(message.toLowerCase().equals("/logout")) {
                 type = 1;
             }
+            //set message with "/msg" as a type 2 ChatMessage
             else if(message.startsWith("/msg ")){
                 message = message.replaceFirst("/msg ", "");
-                user = message.substring(0, message.indexOf(" "));
+                user = message.substring(0, message.indexOf(" ")); //Take a look
                 message = message.substring(message.indexOf(" ")+1);
                 type = 2;
-                if(user.equals(username)||user.equals("")) {
-                    user = "";
-                    type = 0;
-                    System.out.println("When you try to message yourself, you will message to the whole " +
-                            "server like normal");
+		          //if the username has been used, set message as a type 3 ChatMessage
+                if(user.equals(username)) {
+                    type = 3;
                 }
             }
+
             ChatMessage msg = new ChatMessage(type, message, user);
+            //send ChatMessage object to the Server class
             client.sendMessage(msg);
-            if(type == 1){
+            //if ChatMessage a type 1 or 3, close the ChatClient object
+            if(type == 1 || type = 3){
                 x=false;
                 client.close();
             }
@@ -136,6 +140,7 @@ final class ChatClient {
         public void run() {
             try {
                 while(!socket.isClosed()) {
+                    //print all string message Objects sent from Server class
                     String msg = (String) sInput.readObject();
                     System.out.println(msg);
                     System.out.print("> ");
